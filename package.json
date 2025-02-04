@@ -1,0 +1,32 @@
+{
+  "name": "nuxt-app",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "nuxt build",
+    "dev": "HOST=0.0.0.0 nuxt dev",
+    "generate": "nuxt generate",
+    "preview": "nuxt preview",
+    "postinstall": "nuxt prepare"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.741.0",
+    "@aws-sdk/lib-storage": "^3.741.0",
+    "@aws-sdk/s3-request-presigner": "^3.741.0",
+    "@headlessui/vue": "^1.7.19",
+    "@heroicons/vue": "^2.1.1",
+    "@nuxtjs/supabase": "^1.1.6",
+    "@pinia/nuxt": "^0.5.1",
+    "@supabase/supabase-js": "^2.39.0",
+    "backblaze-b2": "^1.7.0",
+    "nuxt": "^3.13.0",
+    "openai": "^4.82.0",
+    "vue-toastification": "^2.0.0-rc.5"
+  },
+  "devDependencies": {
+    "@nuxtjs/tailwindcss": "^6.13.1",
+    "autoprefixer": "^10.4.18",
+    "nuxt-headlessui": "^1.2.0",
+    "postcss": "^8.4.35"
+  }
+}
