@@ -1,7 +1,29 @@
-import { S3Client, GetObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3'
-import { Upload } from '@aws-sdk/lib-storage'
-import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
+import B2 from 'backblaze-b2'
+import { S3Client, DeleteObjectCommand } from '@aws-sdk/client-s3'
 
+// Tipos según la documentación de B2
+interface B2AuthorizeResponse {
+  absoluteMinimumPartSize: number
+  accountId: string
+  allowed: {
+    bucketId: string
+    bucketName: string
+    capabilities: string[]
+    namePrefix: string
+  }
+  apiUrl: string
+  authorizationToken: string
+  downloadUrl: string
+  recommendedPartSize: number
+}
+
+// Configuración de B2
+const b2Client = new B2({
+  applicationKeyId: process.env.B2_APPLICATION_KEY_ID!,
+  applicationKey: process.env.B2_APPLICATION_KEY!
+})
+
+// Configuración de S3
 const getS3Config = () => ({
   credentials: {
     accessKeyId: process.env.B2_KEY_ID as string,
@@ -12,63 +34,51 @@ const getS3Config = () => ({
   forcePathStyle: true,
 })
 
-export const s3Client = new S3Client(getS3Config())
-
-interface UploadResponse {
-  url: string
-  key: string
-}
+// Cliente S3 para operaciones específicas
+const s3Client = new S3Client(getS3Config())
 
 export async function uploadFileToB2(file: File, fileName: string) {
   try {
-    console.log('Starting file upload...', { 
-      fileName,
-      fileSize: file.size,
-      fileType: file.type
-    })
-
-    // Crear FormData para enviar el archivo
     const formData = new FormData()
     formData.append('file', file)
     formData.append('fileName', fileName)
     formData.append('type', file.type)
 
-    const response = await $fetch<UploadResponse>('/api/upload', {
+    const response = await $fetch<{ url: string; key: string }>('/api/upload', {
       method: 'POST',
       body: formData
     })
 
     return response
   } catch (error) {
-    console.error('Error uploading file:', {
-      error,
-      fileName,
-      fileSize: file.size,
-      fileType: file.type
-    })
+    console.error('Error uploading file:', error)
     throw error
   }
 }
 
-// Función para obtener una nueva URL firmada
-export async function getSignedFileUrl(key: string) {
-  try {
-    const response = await $fetch<{ url: string }>('/api/getSignedUrl', {
-      params: { key }
-    })
-    return response.url
-  } catch (error) {
-    console.error('Error getting signed URL:', error)
-    throw error
-  }
+export async function uploadFile(fileName: string, data: Buffer) {
+  const authResponse = await b2Client.authorize()
+  const response = await b2Client.getUploadUrl({
+    bucketId: process.env.B2_BUCKET_ID!
+  })
+
+  return b2Client.uploadFile({
+    uploadUrl: response.data.uploadUrl,
+    uploadAuthToken: response.data.authorizationToken,
+    fileName,
+    data
+  })
+}
+
+export async function getSignedFileUrl(fileName: string) {
+  const authResponse = await b2Client.authorize() as unknown as { data: B2AuthorizeResponse }
+  const downloadUrl = `${authResponse.data.downloadUrl}/file/${process.env.B2_BUCKET_NAME}/${fileName}`
+  return downloadUrl
 }
 
 export async function deleteFileFromB2(filePath: string) {
   try {
-    // Usar el cliente S3 con la configuración correcta
-    const client = new S3Client(getS3Config())
-    
-    await client.send(new DeleteObjectCommand({
+    await s3Client.send(new DeleteObjectCommand({
       Bucket: process.env.B2_BUCKET_NAME as string,
       Key: filePath
     }))

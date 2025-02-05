@@ -26,4 +26,16 @@ export type UpdateDocument = Tables['documents']['Update']
 export type DbDocument = Database['public']['Tables']['documents']['Row']
 export type DbInsertDocument = Database['public']['Tables']['documents']['Insert']
 
-export type NewDocument = DbInsertDocument 
+export type NewDocument = DbInsertDocument
+
+export interface DocumentVersion {
+  id: string
+  document_id: string
+  version_number: number
+  file_path: string
+  file_url?: string
+  metadata?: Record<string, any>
+  created_at: string
+  created_by: string
+  comment?: string
+} 

@@ -61,7 +61,22 @@
             </span>
           </td>
           <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-            <button @click="handleDelete(doc.id)" class="text-red-600 hover:text-red-500 transition-colors">
+            <button 
+              @click="handleEdit(doc)" 
+              class="text-indigo-600 hover:text-indigo-500 transition-colors mr-4"
+            >
+              Editar
+            </button>
+            <button 
+              @click="handleVersions(doc)" 
+              class="text-gray-600 hover:text-gray-500 transition-colors mr-4"
+            >
+              Versiones
+            </button>
+            <button 
+              @click="handleDelete(doc.id)" 
+              class="text-red-600 hover:text-red-500 transition-colors"
+            >
               Eliminar
             </button>
           </td>
@@ -73,6 +88,18 @@
         </tr>
       </tbody>
     </table>
+    <DocumentEdit
+      v-if="showEditModal && selectedDocument"
+      :document="selectedDocument"
+      @close="showEditModal = false"
+      @updated="$emit('update', $event)"
+    />
+    <DocumentVersions
+      v-if="showVersionsModal && selectedVersionDocument"
+      :document-id="selectedVersionDocument.id"
+      @close="showVersionsModal = false"
+      @version-restored="$emit('update', selectedVersionDocument)"
+    />
   </div>
 </template>
 
@@ -81,13 +108,16 @@ import type { Document } from '~/types'
 import { getSignedFileUrl } from '~/utils/b2'
 import DocumentTags from '~/components/DocumentTags.vue'
 import type { Database } from '~/types/supabase'
+import DocumentEdit from '~/components/DocumentEdit.vue'
+import DocumentVersions from '~/components/DocumentVersions.vue'
 
 const props = defineProps<{
   documents: Document[]
 }>()
 
 const emit = defineEmits<{
-  delete: [id: string]
+  delete: [id: string],
+  update: [document: Document]
 }>()
 const client = useSupabaseClient<Database>()
 const documentUrls = ref<{ [key: string]: string }>({})
@@ -98,6 +128,10 @@ interface Category {
 }
 const categories = ref<Record<string, Category>>({})
 const intervalRef = ref<NodeJS.Timeout>()
+const showEditModal = ref(false)
+const selectedDocument = ref<Document | null>(null)
+const showVersionsModal = ref(false)
+const selectedVersionDocument = ref<Document | null>(null)
 
 // Actualizar URLs firmadas
 async function updateSignedUrls() {
@@ -209,5 +243,15 @@ async function handleDelete(id: string) {
       icon: 'error'
     })
   }
+}
+
+function handleEdit(doc: Document) {
+  selectedDocument.value = doc
+  showEditModal.value = true
+}
+
+function handleVersions(doc: Document) {
+  selectedVersionDocument.value = doc
+  showVersionsModal.value = true
 }
 </script>

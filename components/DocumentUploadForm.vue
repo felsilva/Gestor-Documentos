@@ -99,7 +99,9 @@
 <script setup lang="ts">
 import CategorySelect from './CategorySelect.vue'
 import TagInput from './TagInput.vue'
+import type { Document } from '~/types'
 import type { Database } from '~/types/supabase'
+import { uploadFileToB2 } from '~/utils/b2'
 
 const client = useSupabaseClient<Database>()
 const user = useSupabaseUser()

@@ -35,6 +35,7 @@
       <DocumentTable 
         :documents="filteredDocuments" 
         @delete="handleDeleteDocument"
+        @update="handleUpdateDocument"
       />
     </div>
   </div>
@@ -202,4 +203,11 @@ function getDaysUntilDeadline(deadline: string) {
 onMounted(() => {
   loadDocuments()
 })
+
+async function handleUpdateDocument(updatedDoc: Document) {
+  const index = documents.value.findIndex(doc => doc.id === updatedDoc.id)
+  if (index !== -1) {
+    documents.value[index] = updatedDoc
+  }
+}
 </script>
