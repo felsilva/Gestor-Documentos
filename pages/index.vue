@@ -1,42 +1,16 @@
 <template>
-  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-    <div class="md:flex md:items-center md:justify-between">
-      <div class="min-w-0 flex-1">
-        <h2 class="text-2xl font-semibold text-gray-900">
-          Documentos
-        </h2>
-        <p class="mt-1 text-sm text-gray-500">
-          Gestione sus documentos y fechas límite
-        </p>
+  <div class="py-6">
+    <div class="mx-auto max-w-7xl px-4 sm:px-6 md:px-8">
+      <h1 class="text-2xl font-semibold text-gray-900">Inicio</h1>
+    </div>
+    <div class="mx-auto max-w-7xl px-4 sm:px-6 md:px-8">
+      <div class="py-4">
+        <StatsSummary
+          :total-documents="stats.totalDocuments"
+          :pending-documents="stats.pendingDocuments"
+          :archived-documents="stats.archivedDocuments"
+        />
       </div>
-      <div class="mt-4 flex md:ml-4 md:mt-0">
-        <NuxtLink
-          to="/upload"
-          class="inline-flex items-center gap-1.5 rounded-md bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 transition-colors"
-        >
-          <PlusIcon class="h-5 w-5" />
-          Subir documento
-        </NuxtLink>
-      </div>
-    </div>
-
-    <div class="mt-6">
-      <StatsSummary :stats="stats" />
-    </div>
-
-    <div class="mt-6">
-      <DocumentFilters
-        v-model:filters="filters"
-        class="mt-6"
-      />
-    </div>
-
-    <div class="mt-8">
-      <DocumentTable 
-        :documents="filteredDocuments" 
-        @delete="handleDeleteDocument"
-        @update="handleUpdateDocument"
-      />
     </div>
   </div>
 </template>
@@ -52,7 +26,8 @@ const client = useSupabaseClient<Database>()
 const documents = ref<Document[]>([])
 const stats = ref({
   totalDocuments: 0,
-  activeAlerts: 0
+  pendingDocuments: 0,
+  archivedDocuments: 0
 })
 
 interface Filters {
@@ -168,10 +143,11 @@ async function loadDocuments() {
 
     // Actualizar estadísticas
     stats.value.totalDocuments = data.length
-    stats.value.activeAlerts = data.filter(doc => {
+    stats.value.pendingDocuments = data.filter(doc => {
       const daysUntilDeadline = getDaysUntilDeadline(doc.deadline)
-      return daysUntilDeadline <= 7
+      return daysUntilDeadline > 7
     }).length
+    stats.value.archivedDocuments = data.filter(doc => doc.is_archived).length
   } catch (error: any) {
     alert(error.message)
   }

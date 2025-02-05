@@ -31,10 +31,10 @@
           <td class="px-6 py-4 whitespace-nowrap">
             <div class="flex flex-col">
               <a 
-                :href="documentUrls[doc.id] || '#'"
-                target="_blank"
+                @click.prevent="handlePreview(doc)"
+                :href="getDocumentUrl(doc.id)"
                 class="text-sm font-medium text-indigo-600 hover:text-indigo-500 transition-colors"
-                :class="{ 'opacity-50 cursor-not-allowed': !documentUrls[doc.id] }"
+                :class="{ 'opacity-50 cursor-not-allowed': !hasValidUrl(doc.id) }"
               >
                 {{ doc.title }}
               </a>
@@ -100,6 +100,12 @@
       @close="showVersionsModal = false"
       @version-restored="$emit('update', selectedVersionDocument)"
     />
+    <DocumentPreview
+      v-if="showPreviewModal && selectedPreviewDocument"
+      :document="selectedPreviewDocument"
+      :document-url="getDocumentUrl(selectedPreviewDocument.id)"
+      @close="showPreviewModal = false"
+    />
   </div>
 </template>
 
@@ -110,6 +116,11 @@ import DocumentTags from '~/components/DocumentTags.vue'
 import type { Database } from '~/types/supabase'
 import DocumentEdit from '~/components/DocumentEdit.vue'
 import DocumentVersions from '~/components/DocumentVersions.vue'
+import DocumentPreview from '~/components/DocumentPreview.vue'
+
+interface DocumentUrlMap {
+  [key: string]: string
+}
 
 const props = defineProps<{
   documents: Document[]
@@ -120,7 +131,7 @@ const emit = defineEmits<{
   update: [document: Document]
 }>()
 const client = useSupabaseClient<Database>()
-const documentUrls = ref<{ [key: string]: string }>({})
+const documentUrls = ref<DocumentUrlMap>({})
 const toast = useToast()
 interface Category {
   id: string
@@ -132,17 +143,22 @@ const showEditModal = ref(false)
 const selectedDocument = ref<Document | null>(null)
 const showVersionsModal = ref(false)
 const selectedVersionDocument = ref<Document | null>(null)
+const showPreviewModal = ref(false)
+const selectedPreviewDocument = ref<Document | null>(null)
 
 // Actualizar URLs firmadas
 async function updateSignedUrls() {
+  const newUrls: DocumentUrlMap = {}
   for (const doc of props.documents) {
     try {
-      documentUrls.value[doc.id] = await getSignedFileUrl(doc.file_path)
+      const url = await getSignedFileUrl(doc.file_path)
+      newUrls[doc.id] = url
     } catch (error) {
       console.error(`Error updating URL for document ${doc.id}:`, error)
-      documentUrls.value[doc.id] = ''
+      newUrls[doc.id] = ''
     }
   }
+  documentUrls.value = newUrls
 }
 
 // Actualizar URLs cada 45 minutos
@@ -253,5 +269,20 @@ function handleEdit(doc: Document) {
 function handleVersions(doc: Document) {
   selectedVersionDocument.value = doc
   showVersionsModal.value = true
+}
+
+function handlePreview(doc: Document) {
+  if (hasValidUrl(doc.id)) {
+    selectedPreviewDocument.value = doc
+    showPreviewModal.value = true
+  }
+}
+
+function getDocumentUrl(id: string): string {
+  return documentUrls.value[id] ?? '#'
+}
+
+function hasValidUrl(id: string): boolean {
+  return !!documentUrls.value[id]
 }
 </script>

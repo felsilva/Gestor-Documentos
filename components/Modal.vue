@@ -24,7 +24,12 @@
             leave-from="opacity-100 scale-100"
             leave-to="opacity-0 scale-95"
           >
-            <DialogPanel class="w-full max-w-md transform overflow-hidden rounded-2xl bg-white p-6 text-left align-middle shadow-xl transition-all">
+            <DialogPanel
+              :class="[
+                'w-full max-w-md transform overflow-hidden rounded-2xl bg-white p-6 text-left align-middle shadow-xl transition-all',
+                maxWidth
+              ]"
+            >
               <DialogTitle
                 as="h3"
                 class="text-lg font-medium leading-6 text-gray-900"
@@ -50,6 +55,22 @@ import {
   DialogPanel,
   DialogTitle,
 } from '@headlessui/vue'
+import { computed } from 'vue'
+
+const props = defineProps<{
+  size?: 'md' | 'lg' | 'xl'
+}>()
+
+const maxWidth = computed(() => {
+  switch (props.size) {
+    case 'xl':
+      return 'max-w-7xl'
+    case 'lg':
+      return 'max-w-4xl'
+    default:
+      return 'max-w-2xl'
+  }
+})
 
 defineEmits<{
   close: []
